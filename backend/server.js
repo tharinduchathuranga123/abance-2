@@ -3,7 +3,7 @@ const cors = require("cors");
 const crypto = require("crypto");
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // ── WorkHub24 Configuration ───────────────────────────────────────────────────
 const TENANT_ID   = "IJ7J6CWM2XUJKVLKL7HHOOCLPFMOWFWW";
@@ -23,8 +23,28 @@ const DATASTORES = {
 };
 
 // ── Token — update this whenever it expires ───────────────────────────────────
-const AUTH_TOKEN = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJ3b3JraHViLmNvbSIsImVudiI6InByb2QiLCJleHAiOjE3NzYzNDc3MTQsImlhdCI6MTc3NjMxMTcxNCwiaXNzIjoid29ya2h1Yi5jb20iLCJqdGkiOiJjNjhjMjAxYS1mZDI2LTQyMzgtYjk3Mi01MDViMDE4ZTk2MGYiLCJsbSI6IlBBU1NXT1JEIiwibG9naW5fdXNlcl9pZCI6IjdIVjRESU9SNEpSUFY0QVlFQ1VVTlNSNlI0MzdaSlhNIiwibmJmIjoxNzc2MzExNzEzLCJzY29wZSI6WyJ1OnYiLCJ3OnYiXSwic2lkIjoiSU1RVk1TS1ZCVkk2Q1dSSjNPT083VUZFUERYT1pHNVBBNFgyVElWNyIsInN1YiI6IjdIVjRESU9SNEpSUFY0QVlFQ1VVTlNSNlI0MzdaSlhNIiwidG50IjoiSUo3SjZDV00yWFVKS1ZMS0w3SEhPT0NMUEZNT1dGV1ciLCJ0eXAiOiJyZWZyZXNoIiwidW5hbWUiOiJ0aCB0c3QifQ.6Kybe1npl919fCRC7T7ffOdVoRzii7UYd2N9cP_FKxWvLQzdys3XjZnaVkcjmnbTPHqq90j8CHFOJIOOpSANoA";
-app.use(cors({ origin: "*" }));
+const AUTH_TOKEN = process.env.AUTH_TOKEN  || "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJ3b3JraHViLmNvbSIsImVudiI6InByb2QiLCJleHAiOjE3NzYzNDc3MTQsImlhdCI6MTc3NjMxMTcxNCwiaXNzIjoid29ya2h1Yi5jb20iLCJqdGkiOiJjNjhjMjAxYS1mZDI2LTQyMzgtYjk3Mi01MDViMDE4ZTk2MGYiLCJsbSI6IlBBU1NXT1JEIiwibG9naW5fdXNlcl9pZCI6IjdIVjRESU9SNEpSUFY0QVlFQ1VVTlNSNlI0MzdaSlhNIiwibmJmIjoxNzc2MzExNzEzLCJzY29wZSI6WyJ1OnYiLCJ3OnYiXSwic2lkIjoiSU1RVk1TS1ZCVkk2Q1dSSjNPT083VUZFUERYT1pHNVBBNFgyVElWNyIsInN1YiI6IjdIVjRESU9SNEpSUFY0QVlFQ1VVTlNSNlI0MzdaSlhNIiwidG50IjoiSUo3SjZDV00yWFVKS1ZMS0w3SEhPT0NMUEZNT1dGV1ciLCJ0eXAiOiJyZWZyZXNoIiwidW5hbWUiOiJ0aCB0c3QifQ.6Kybe1npl919fCRC7T7ffOdVoRzii7UYd2N9cP_FKxWvLQzdys3XjZnaVkcjmnbTPHqq90j8CHFOJIOOpSANoA";
+
+// ── CORS Configuration for Vercel hosting ────────────────────────────────────
+const allowedOrigins = [
+  "http://localhost:5173",              // Local development (Vite)
+  "http://localhost:3000",              // Local alternative
+  "https://abance-2-igez.vercel.app",  // Old production frontend
+  "https://abance-testing.vercel.app", // New production frontend ← ADDED
+];
+
+app.use(cors({ 
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json({ limit: "10mb" }));
 
 // ── Health Check ──────────────────────────────────────────────────────────────
@@ -561,15 +581,21 @@ app.post("/api/verify-otp", async (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n✅  Abans Finance backend  →  http://localhost:${PORT}`);
-  console.log(`\n    Datastores:`);
-  console.log(`      [1] Main      app.workhub24.com   ${DATASTORES.main.id}`);
-  console.log(`      [2] Bank      app.workhub24.com   ${DATASTORES.bank.id}`);
-  console.log(`      [3] Credit    beta.workhub24.com  ${DATASTORES.credit.id}`);
-  console.log(`      [4] Vehicle   beta.workhub24.com  ${DATASTORES.vehicle.id}`);
-  console.log(`      [5] Shares    app.workhub24.com   ${DATASTORES.shares.id}`);
-  console.log(`      [6] Facility  app.workhub24.com   ${DATASTORES.facility.id}`);
-  console.log(`      [7] Land      app.workhub24.com   ${DATASTORES.land.id}`);
-  console.log(`      [8] Guarantor app.workhub24.com   ${DATASTORES.guarantor.id}\n`);
-});
+// For Vercel: export as serverless function
+module.exports = app;
+
+// For local development: listen on PORT
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`\n✅  Abans Finance backend  →  http://localhost:${PORT}`);
+    console.log(`\n    Datastores:`);
+    console.log(`      [1] Main      app.workhub24.com   ${DATASTORES.main.id}`);
+    console.log(`      [2] Bank      app.workhub24.com   ${DATASTORES.bank.id}`);
+    console.log(`      [3] Credit    beta.workhub24.com  ${DATASTORES.credit.id}`);
+    console.log(`      [4] Vehicle   beta.workhub24.com  ${DATASTORES.vehicle.id}`);
+    console.log(`      [5] Shares    app.workhub24.com   ${DATASTORES.shares.id}`);
+    console.log(`      [6] Facility  app.workhub24.com   ${DATASTORES.facility.id}`);
+    console.log(`      [7] Land      app.workhub24.com   ${DATASTORES.land.id}`);
+    console.log(`      [8] Guarantor app.workhub24.com   ${DATASTORES.guarantor.id}\n`);
+  });
+}

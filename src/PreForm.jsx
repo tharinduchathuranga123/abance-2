@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./PreForm.css";
+import { API_BASE_URL } from "./config";
 
 function PreForm({ onVerified }) {
   const [step, setStep]       = useState("form"); // "form" | "otp"
@@ -23,7 +24,7 @@ function PreForm({ onVerified }) {
     setMessage("Saving your details...");
 
     try {
-      const res = await fetch("http://localhost:3001/api/pre-register", {
+      const res = await fetch(`${API_BASE_URL}/api/pre-register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), nicNo: nic.trim(), phone: phone.trim() }),
@@ -64,7 +65,7 @@ function PreForm({ onVerified }) {
     setMessage("Verifying...");
 
     try {
-      const res = await fetch("http://localhost:3001/api/verify-otp", {
+      const res = await fetch(`${API_BASE_URL}/api/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: phone.trim(), otp: otp.trim() }),

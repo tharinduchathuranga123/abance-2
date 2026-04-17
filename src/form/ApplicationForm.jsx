@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./ApplicationForm.css";
+import { API_BASE_URL } from "../config";
 
 const ThankYouPage = ({ onRestart }) => (
   <div className="thank-you-container">
@@ -141,7 +142,7 @@ const handleSubmit = async (e) => {
       guarantors: formData.guarantors
     });
 
-    const response = await fetch("http://localhost:3001/api/submit-application", {
+    const response = await fetch(`${API_BASE_URL}/api/submit-application`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
